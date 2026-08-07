@@ -3,7 +3,7 @@
 
 import pandas as pd
 path = "data/accepted_2007_to_2018Q4.csv.gz"
-df = pd.read_csv(path, usecols=['loan_status', 'issue_d', 'term'])
+df = pd.read_csv(path, usecols=['loan_status', 'issue_d', 'term', 'total_rec_prncp', 'funded_amnt', 'last_pymnt_d'])
 
 # using only 36month terms.
 
@@ -13,10 +13,27 @@ df36 = df[df['term'] == '36 months'].copy()
 # convert the format such that the the format for issue periods is correct
 
 df36['issue_d'] = pd.to_datetime(df36['issue_d'], format='%b-%Y')
+df36['last_pymnt_d'] = pd.to_datetime(df36['last_pymnt_d'], format='%b-%Y')
 
 # establish the cohort: 36month loans issued in 2015, since all of them are finished by the time the data is finished being reported, list by quarter
 # was also 2016, but excluded: 36-month loans issued in 2016 mature in 2019, past the snapshot. the crosstab showed 5.5k–32k Current per quarter
 
-cohort = df36[df36['issue_d'].dt.year.isin([2015])]
+cohort = df36[(df36['issue_d'].dt.year == 2015)]
 print(cohort.shape)
 print(pd.crosstab(cohort['loan_status'], cohort['issue_d'].dt.to_period('Q')))
+
+# check what a loan being "charged off" actually means
+
+chargedoff = cohort[cohort['loan_status'] == 'Charged Off']
+
+recovered = chargedoff['total_rec_prncp'] / chargedoff['funded_amnt']
+days_to_last_payment = chargedoff['last_pymnt_d'] - chargedoff['issue_d']
+
+print(recovered.describe())
+print(days_to_last_payment.describe())
+
+# since there we see that there are 200 more charged off loans than there are last payment dates. 
+# we want to confirm it is because a payment was never made in the first place
+
+nopayment = chargedoff['last_pymnt_d'].isna()
+print(chargedoff[nopayment]['total_rec_prncp'].describe())
