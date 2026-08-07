@@ -1,6 +1,6 @@
 ﻿# Decisions
 
-#1
+# 1
 
 Decision: Lending Club dataset over German Credit dataset.
 
@@ -16,7 +16,7 @@ Why:
 
 Cost: Since lending club is a peer to peer marketplace, the general applicant would be of a different nature: it's unsecured, and more often debt-consolidation heavy, therefore the findings could not really transfer for a bank applicant, though the methodology of building a model stands.
 
-#2
+# 2
 
 Decision: The cohort are 36-month loans issued in Q1-Q4 of 2015.
 
@@ -24,7 +24,15 @@ Why: Originally, both loans issued in 2015 and 2016 were considered. Since the d
 
 Cost: The whole 2016 vintage, which is around 270,000 loans.
 
-#9
+# 3
+
+Decision: Charged Off = bad, Fully Paid = good, the 147 indeterminate 2015 loans excluded.
+
+Why: Only those two statuses are settled outcomes. Forcing a label on 147 rows out of 283,173 to avoid saying "excluded" is worse than excluding them. charge-off marks the lender's write-off rather than the borrower's distress, evidenced by 39% of principal returned across a median 488 days of payments.
+
+Cost: Since Lending Club gives terminal status only, no payment history, a borrower who never missed a payment doesn't get distinguished from one who hit the conventional 60 or 90 DPD, which by global bank terms is considered bad, and then recovered. That contamination sits in a class of 238,894, where it is hardest to detect.
+
+# 9
 
 Decision: A finding is defined as either GBM's and Logistic Regression's difference being inside noise, or outside it. V1 is done when all six pieces exist and the budget of 20 configurations is spent, whatever the comparison shows. Scores are reported on a slice used neither for training nor for choosing the winning configuration.
 
