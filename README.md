@@ -29,7 +29,11 @@ Every loan in the file was approved and funded, so the models estimate default r
 
 ## 3. Target definition
 
-*TODO*
+Since the model predicts default, a bad/Charged Off loan is labelled 1 and a good/Fully Paid loan 0. These are the target's two possible states; the model outputs a probability of default between 0 and 1. Of the resolved loans, 14.9% defaulted - 238,894 good against 42,132 bad. A further 147 loans from 2015 are dropped because their outcome is indeterminate, so not yet concluded.
+
+These two loan states are used because they are the only ones that record settled outcomes.
+
+The definition is limited in that a loan reaching 60 or 90 days past due (DPD), the industry standard for default, is still counted as Fully Paid if the borrower recovers. Lending Club records only terminal status, so Charged Off is the closest available proxy. See #3 in decisions.md.
 
 ## 4. What "done" means
 
