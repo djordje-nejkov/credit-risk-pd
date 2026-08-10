@@ -11,7 +11,14 @@ print(schema.shape[1])
 
 # set columns to be used to determine cohort.
 
-df = pd.read_csv(path, usecols=['loan_status', 'issue_d', 'term', 'total_rec_prncp', 'funded_amnt', 'last_pymnt_d', 'sub_grade', 'int_rate'])
+df = pd.read_csv(path, usecols=['loan_status', 
+                                'issue_d', 
+                                'term', 
+                                'total_rec_prncp', 
+                                'funded_amnt', 
+                                'last_pymnt_d', 
+                                'sub_grade', 
+                                'int_rate',])
 
 # check the number of rows, done here since df already loads 8 columns instead of 151, the count is free here since df is 
 # already loaded considering we get 2,260,701 rows.
@@ -23,7 +30,7 @@ print(df.shape[0])
 df['issue_d'] = pd.to_datetime(df['issue_d'], format='%b-%Y')
 df['last_pymnt_d'] = pd.to_datetime(df['last_pymnt_d'], format='%b-%Y')
 
-# check the timeframe that the dataset covers: from June 2007, last loan issued December 2018, the file was pulled Q1 2019.
+# check the timeframe that the dataset covers: from June 2007, last loan issued December 2018.
 
 print(df['issue_d'].min())
 print(df['issue_d'].max())
