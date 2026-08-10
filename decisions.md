@@ -18,17 +18,19 @@ Cost: Since lending club is a peer to peer marketplace, the general applicant wo
 
 # 2
 
-Decision: The cohort are 36-month loans issued in Q1-Q4 of 2015.
+Decision: The cohort is 36-month loans issued in Q1–Q4 of 2015.
 
-Why: Originally, both loans issued in 2015 and 2016 were considered. Since the data ends at ~Q1 2019, many of the 2016 loans did not have the full 36 months to mature, therefore do not have a terminal outcome. A decision was made to exclude them since we cannot reliably put them in either bad/good group. The matured 2016 loans are also excluded: whether a loan has resolved by the snapshot depends on its outcome, since charged-off loans resolve early while on-schedule borrowers do not resolve until month 36. The resolved subset is therefore not a random sample of the vintage, so keeping it would compare a filtered 2016 against a complete 2015.
+Why: Originally, loans issued in both 2015 and 2016 were considered. Since the data ends at ~Q1 2019, many of the 2016 loans did not have the full 36 months to mature and therefore have no terminal outcome. They were excluded because they cannot reliably be placed in either the bad or the good group. The matured 2016 loans are also excluded: whether a loan has resolved by the snapshot depends on its outcome, since charged-off loans resolve early while on-schedule borrowers do not resolve until month 36. The resolved subset is therefore not a random sample of the vintage, so keeping it would compare a filtered 2016 against a complete 2015.
 
-Cost: The whole 2016 vintage, which is around 270,000 loans.
+The 2012–2014 vintages were also considered but left out. 2015 is the most recent fully-matured vintage, so its underwriting regime is closest to the one a deployed model would score. Lending Club's 36-month volume also grew from ~43k in 2012 to ~283k in 2015, so pooling would combine materially different applicant populations. Bad rates across 2012–2015 run 12.3–14.9%, but a stable marginal bad rate does not imply a stable relationship between features and default, so it is not the evidence for this decision.
+
+Cost: ~270,000 loans from the 2016 vintage, and ~306,000 loans (~40,000 bad events) from 2012–2014.
 
 # 3
 
 Decision: Charged Off = bad, Fully Paid = good, the 147 indeterminate 2015 loans excluded.
 
-Why: Only those two statuses are settled outcomes. Forcing a label on 147 rows out of 283,173 to avoid saying "excluded" is worse than excluding them. charge-off marks the lender's write-off rather than the borrower's distress, evidenced by 39% of principal returned across a median 488 days of payments.
+Why: Only those two statuses are settled outcomes. Forcing a label on 147 rows out of 283,173 to avoid saying "excluded" is worse than excluding them. Charge-off marks the lender's write-off rather than the borrower's distress, evidenced by 39% of principal returned across a median 488 days of payments.
 
 Cost: Since Lending Club gives terminal status only, no payment history, a borrower who never missed a payment doesn't get distinguished from one who hit the conventional 60 or 90 DPD, which by global bank terms is considered bad, and then recovered. That contamination sits in a class of 238,894, where it is hardest to detect.
 
