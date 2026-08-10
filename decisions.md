@@ -30,9 +30,17 @@ Cost: ~270,000 loans from the 2016 vintage, and ~306,000 loans (~40,000 bad even
 
 Decision: Charged Off = bad, Fully Paid = good, the 147 indeterminate 2015 loans excluded.
 
-Why: Only those two statuses are settled outcomes. Forcing a label on 147 rows out of 283,173 to avoid saying "excluded" is worse than excluding them. Charge-off marks the lender's write-off rather than the borrower's distress, evidenced by 39% of principal returned across a median 488 days of payments.
+Why: Only those two statuses are settled outcomes. Forcing a label on 147 rows out of 283,173 to avoid saying "excluded" is worse than excluding them. Charge-off marks the lender's write-off. There were 200 cases of borrowers returning nothing, and a quarter of Charged Off borrowers returned at least 59% of the principal, meaning that the label spans borrower outcomes from nothing repaid to most repaid, so the label marks the write-off, not a borrower condition.
 
 Cost: Since Lending Club gives terminal status only, no payment history, a borrower who never missed a payment doesn't get distinguished from one who hit the conventional 60 or 90 DPD, which by global bank terms is considered bad, and then recovered. That contamination sits in a class of 238,894, where it is hardest to detect.
+
+# 5
+
+Decision: Restrict int_rate, grade and sub_grade to Set 1 of the 2x2; Set 2 excludes all three.
+
+Why: Firstly, these three parameters run hand in hand: Lending Club assigns the interest rate (int_rate) based on how its own model grades applicants. Secondly, even though int_rate is obviously a very useful parameter for measuring the chance of a loan ending up charged off, it cannot be used in both Set 1 and Set 2. Set 2 is defined as being without Lending Club's model output, and int_rate is that output in another unit. Thirdly, keeping only int_rate leaves the logistic regression worse served: without sub_grade it cannot build the step function a GBM builds from int_rate alone. Grade is subsumed by sub_grade and adds nothing beyond it. This matters for reading the result - if the two models converge in Set 1, that is partly the feature set serving the logistic regression, not only the algorithms performing alike.
+
+Cost: Set 2 cannot include int_rate at all. The rate sets the monthly payment, so it is a causal driver of default, not only a proxy for Lending Club's opinion. Set 2 loses a real variable, and the column cannot be split into its two roles.
 
 # 9
 
