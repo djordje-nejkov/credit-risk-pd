@@ -24,7 +24,7 @@ The source is Lending Club's data on accepted loans issued between 2007 and 2018
 
 The cohort is restricted to individual 36-month loans issued in Q1–Q4 of 2015, which leaves 282,934 loans. The 2016 and 2012–2014 vintages were considered and excluded: the 2016 loans have no terminal outcome, and 2012–2014 are a materially different population. See #2 in decisions.md.
 
-Every loan in the file was approved and funded, so the models estimate default risk conditional on acceptance. The population is itself the output of Lending Club's own filter, which means the models say nothing about anyone Lending Club turned away.
+Every loan in the file was approved and funded, so the models estimate default risk conditional on acceptance. The population is itself the output of Lending Club's own filter, which means the models say nothing about anyone Lending Club turned away. The declined population is available and deliberately not used, because it has no outcome to model.
 
 
 ## 3. Target definition
