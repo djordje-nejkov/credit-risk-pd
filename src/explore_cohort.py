@@ -18,7 +18,8 @@ df = pd.read_csv(path, usecols=['loan_status',
                                 'funded_amnt', 
                                 'last_pymnt_d', 
                                 'sub_grade', 
-                                'int_rate',])
+                                'int_rate', 
+                                'application_type'])
 
 # check the number of rows, done here since df already loads 8 columns instead of 151, the count is free here since df is 
 # already loaded considering we get 2,260,701 rows.
@@ -40,13 +41,23 @@ print(df['issue_d'].max())
 df['term'] = df['term'].str.strip()
 df36 = df[df['term'] == '36 months'].copy()
 
+# cost check for the joint exclusion, 239 loans.
+
+print(pd.crosstab(df36['application_type'], df36['issue_d'].dt.year))
+
+# decided on only individual loans, redefine.
+
+df36 = df36[df36['application_type'] == 'Individual'].copy()
+
 # the 2015 vintage: most recent fully-matured 36-month loans - see decisions.md #2.
 
-cohort = df36[(df36['issue_d'].dt.year == 2015)]
-print(cohort.shape)
+cohort = df36[df36['issue_d'].dt.year == 2015] 
+
+# check the number of good/bad loans, Charged Off = 42,089, Fully Paid = 240,698, Indeterminate = 147
+
 print(pd.crosstab(cohort['loan_status'], cohort['issue_d'].dt.to_period('Q')))
 
-# charged-off loans track the on-schedule amortisation curve at p25/p50/p75, so the label
+# individual charged-off loans track the on-schedule amortisation curve at p25/p50/p75, so the label
 # marks the lender's write-off rather than a defect visible at origination - see decisions.md #3.
 
 chargedoff = cohort[cohort['loan_status'] == 'Charged Off']
@@ -63,7 +74,7 @@ print(days_to_last_payment.describe())
 nopayment = chargedoff['last_pymnt_d'].isna()
 print(chargedoff[nopayment]['total_rec_prncp'].describe())
 
-# int_rate is pinned to sub_grade (std 0.1-0.4 across rates of 5-29%), so the three grade
+# int_rate is pinned to sub_grade (generally around std 0.1-0.4 across rates of 5-29%, holds for the populated grades, the tail is thin), so the three grade
 # columns can't be split across feature sets - see decisions.md #5.
 
 print(cohort.groupby('sub_grade')['int_rate'].describe())
