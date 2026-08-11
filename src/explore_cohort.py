@@ -1,35 +1,31 @@
 # setup - import library and explore the dataset fully first.
 
 import pandas as pd
-path = "data/accepted_2007_to_2018Q4.csv.gz"
 
-# checks the number of columns = 151, nrows = 5 since we do not need all ~2.2 mil rows loaded at this time.
-# done here since df is restricted to 8 columns, schema has no restriction.
+# check the number of columns and rows in the dataset. columns = 151, rows = ~2.2 mil.
 
-schema = pd.read_csv(path, nrows=5)
-print(schema.shape[1])
+df = pd.read_csv("data/accepted_2007_to_2018Q4.csv.gz")
 
-# set columns to be used to determine cohort.
-
-df = pd.read_csv(path, usecols=['loan_status', 
-                                'issue_d', 
-                                'term', 
-                                'total_rec_prncp', 
-                                'funded_amnt', 
-                                'last_pymnt_d', 
-                                'sub_grade', 
-                                'int_rate', 
-                                'application_type'])
-
-# check the number of rows, done here since df already loads 8 columns instead of 151, the count is free here since df is 
-# already loaded considering we get 2,260,701 rows.
-
-print(df.shape[0])
+print(df.shape[0], df.shape[1])
 
 # convert the format such that the format for issue periods is correct
 
 df['issue_d'] = pd.to_datetime(df['issue_d'], format='%b-%Y')
 df['last_pymnt_d'] = pd.to_datetime(df['last_pymnt_d'], format='%b-%Y')
+df['term'] = df['term'].str.strip()
+
+# check for whether running through the feature dictionary (found in /docs) is enough to decide which features to keep for modelling.
+# features were found that were not documented at all, so the actual drop list needed to be inferred from the csv column names.
+# the reverse direction was also run, finding kept features do not have the same names in the excel file and the .csv
+
+loanstats = pd.read_excel('docs/LCDataDictionary.xlsx', sheet_name='LoanStats')
+browsenotes = pd.read_excel('docs/LCDataDictionary.xlsx', sheet_name='browseNotes')
+
+dictnames = set(loanstats.iloc[:, 0].dropna().str.strip()) | set(browsenotes.iloc[:, 0].dropna().str.strip())
+columns = set(df.columns)
+
+print("in CSV, not in dictionary:", sorted(columns - dictnames))
+print("in dictionary, not in CSV:", sorted(dictnames - columns))
 
 # check the timeframe that the dataset covers: from June 2007, last loan issued December 2018.
 
@@ -38,7 +34,6 @@ print(df['issue_d'].max())
 
 # using only 36month terms.
 
-df['term'] = df['term'].str.strip()
 df36 = df[df['term'] == '36 months'].copy()
 
 # cost check for the joint exclusion, 239 loans.
@@ -51,7 +46,16 @@ df36 = df36[df36['application_type'] == 'Individual'].copy()
 
 # the 2015 vintage: most recent fully-matured 36-month loans - see decisions.md #2.
 
-cohort = df36[df36['issue_d'].dt.year == 2015] 
+cohort = df36[df36['issue_d'].dt.year == 2015].copy()
+
+# check for exclusion of funded_amnt for redundancy, prints 0, so they are the same.
+
+print((cohort['loan_amnt'] != cohort['funded_amnt']).sum())
+
+# check for exclusion of funded_amnt_inv for redundancy. prints 0, since there are no overfunded loans, which means the actual exclusion reason is it not being application-time,
+# but rather a marketplace indicator.
+
+print((cohort['loan_amnt'] < cohort['funded_amnt_inv']).sum())
 
 # check the number of good/bad loans, Charged Off = 42,089, Fully Paid = 240,698, Indeterminate = 147
 
@@ -88,3 +92,28 @@ print(ct['Charged Off'] / (ct['Charged Off'] + ct['Fully Paid']))
 # cost check for decisions.md #2: 306,462 loans in 2012-2014.
 
 print(df36[df36['issue_d'].dt.year.isin([2012, 2013, 2014])].shape[0])
+
+# write the parquet of the cohort, explore_features.py is dependent on this.
+
+identifiers = ['id', 'member_id', 'url']
+
+joint = [c for c in cohort.columns if c.startswith('sec_app_')] + [
+    'annual_inc_joint', 'dti_joint', 'verification_status_joint',
+    'revol_bal_joint', 'application_type']
+
+post_origination = [c for c in cohort.columns
+                    if c.startswith(('hardship_', 'settlement_', 'debt_settlement'))] + [
+    'collection_recovery_fee', 'deferral_term', 'last_credit_pull_d',
+    'last_fico_range_high', 'last_fico_range_low', 'last_pymnt_amnt',
+    'last_pymnt_d', 'next_pymnt_d', 'orig_projected_additional_accrued_interest',
+    'out_prncp', 'out_prncp_inv', 'payment_plan_start_date', 'pymnt_plan',
+    'recoveries', 'total_pymnt', 'total_pymnt_inv', 'total_rec_int',
+    'total_rec_late_fee', 'total_rec_prncp', 'funded_amnt_inv']
+
+redundant = ['funded_amnt']
+
+drop = identifiers + joint + post_origination + redundant
+assert len(drop) == len(set(drop))          
+cohort = cohort.drop(columns=drop)          
+print(cohort.shape)                         
+cohort.to_parquet('data/cohort.parquet')    
