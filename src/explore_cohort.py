@@ -48,9 +48,10 @@ df36 = df36[df36['application_type'] == 'Individual'].copy()
 
 cohort = df36[df36['issue_d'].dt.year == 2015].copy()
 
-# check for exclusion of funded_amnt for redundancy, prints 0, so they are the same.
+# check for funded_amnt, excluded for 'The total amount committed to that loan at that point in time' meaning post-application 
+# redundant as well, but needs to be application-time first, then it is checked for redundancy, since the tests are ordered.
 
-print((cohort['loan_amnt'] != cohort['funded_amnt']).sum())
+print(loanstats[loanstats.iloc[:, 0].str.strip() == 'funded_amnt'].iloc[:, 1].values)
 
 # check for exclusion of funded_amnt_inv for redundancy. prints 0, since there are no overfunded loans, which means the actual exclusion reason is it not being application-time,
 # but rather a marketplace indicator.
@@ -108,12 +109,12 @@ post_origination = [c for c in cohort.columns
     'last_pymnt_d', 'next_pymnt_d', 'orig_projected_additional_accrued_interest',
     'out_prncp', 'out_prncp_inv', 'payment_plan_start_date', 'pymnt_plan',
     'recoveries', 'total_pymnt', 'total_pymnt_inv', 'total_rec_int',
-    'total_rec_late_fee', 'total_rec_prncp', 'funded_amnt_inv']
+    'total_rec_late_fee', 'total_rec_prncp', 'funded_amnt_inv', 'funded_amnt']
 
-redundant = ['funded_amnt']
+redundant = []
 
 drop = identifiers + joint + post_origination + redundant
 assert len(drop) == len(set(drop))          
 cohort = cohort.drop(columns=drop)          
 print(cohort.shape)                         
-cohort.to_parquet('data/cohort.parquet')    
+cohort.to_parquet('data/cohort.parquet')
