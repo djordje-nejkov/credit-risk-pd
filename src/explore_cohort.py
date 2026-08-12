@@ -94,7 +94,7 @@ print(ct['Charged Off'] / (ct['Charged Off'] + ct['Fully Paid']))
 
 print(df36[df36['issue_d'].dt.year.isin([2012, 2013, 2014])].shape[0])
 
-# write the parquet of the cohort, explore_features.py is dependent on this.
+# write the parquet of the cohort, including the candidate features, some requiring further testing on the cohort, done in explore_features.py - see decisions.md #4.
 
 identifiers = ['id', 'member_id', 'url']
 
