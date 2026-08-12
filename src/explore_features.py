@@ -32,21 +32,39 @@ print(c[['desc', 'title', 'zip_code', 'emp_title']].isna().sum())
 
 print(c['zip_code'].value_counts().describe())
 
+# check value characteristics for policy_code, every row is the same for this column, excluded.
+
+print(c['policy_code'].nunique())
+
+# check value characteristics for disbursement_method, every row is Cash, excluded.
+
+print(c['disbursement_method'].value_counts())
+
+# check value characteristics for term, every row is 36 months for this column, excluded.
+# cohort restricted this to 36 months before, but a check doesn't hurt.
+
+print(c['term'].nunique())
+
 # create features.csv - see decisions.md #4.
 # runs every time, so the .csv should not be changed by hand, since every run discards it.
 
 verdicts = {
-    'desc':        ('excluded', 'has 39 populated rows, excluded since the column is empty'),
-    'emp_title':   ('excluded', 'has 86,091 levels, excluded by Test 2'),
-    'zip_code':    ('excluded', 'at least 1/4 of the levels hold 66 or fewer loans, which is unmodellable, excluded by Test 2'),
+    'desc':        ('excluded', 'has 39 populated rows, excluded by Test 1'),
+    'emp_title':   ('excluded', 'has 86,091 levels, excluded by Test 3'),
+    'zip_code':    ('excluded', 'at least 1/4 of the levels hold 66 or fewer loans, which is unmodellable, excluded by Test 3'),
     'loan_status': ('target',   'the charge-off the model predicts'),
     'int_rate':    ('set1',     'assigned based on grade/sub_grade, included only in Set 1 by decisions.md #5'),
     'grade':       ('set1',     'derived from the LC model, included only in Set 1 by decisions.md #5'),
     'sub_grade':   ('set1',     'derived from the LC model, included only in Set 1 by decisions.md #5'),
-    'installment': ('set1',     'can derive int_rate in combination with loan_amnt, considering every loan is 36 months, included only in Set 1 by Test 3'),
+    'installment': ('set1',     'can derive int_rate in combination with loan_amnt, considering every loan is 36 months, included only in Set 1 by Test 4'),
+    'policy_code': ('excluded', 'has 1 value across all rows, excluded by Test 1'),
+    'disbursement_method': ('excluded', 'has 1 value across all rows, excluded by Test 1'),
+    'term': ('excluded', 'has 1 value across all rows because it was restricted by the cohort, excluded by Test 1'),
+    'issue_d': ('excluded', 'not a constant, but a model trained on 2015 loans scored on a new applicant has no use for this field. it is the funding month, which is after approval, excluded by Test 2')
 }
 
 f = pd.DataFrame({'column': c.columns})
 f['feature_set'] = f['column'].map(lambda x: verdicts.get(x, ('both', ''))[0])
 f['reason'] = f['column'].map(lambda x: verdicts.get(x, ('both', ''))[1])
 f.to_csv('docs/features.csv', index=False)
+print(f['feature_set'].value_counts())
