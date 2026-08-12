@@ -34,13 +34,21 @@ Why: Only those two statuses are settled outcomes. Forcing a label on 147 rows o
 
 Cost: Since Lending Club gives terminal status only, no payment history, a borrower who never missed a payment doesn't get distinguished from one who hit the conventional 60 or 90 DPD, which by global bank terms is considered bad, and then recovered. That contamination sits in a class of 240,698, where it is hardest to detect.
 
+# 4
+
+Decision: Modeling features are judged based on three tests, approved if they pass all, run sequentially: whether a column is knowable at application, whether values are too near-unique per row to generalize, and whether a column reconstructs a feature deliberately excluded from one of the sets, in combination with others. Test 3 is set relative, so it only applies to Set 2, where features derived from Lending Club's own model are excluded. Installment is a feature that will be included in Set 1, but not in Set 2, since in combination with loan_amnt it can recover int_rate. Further on this in #5. The order decides the stated reason for dropping a column in the event it violates more than one condition. Joint columns are excluded under #2. The column for the relationship between dti and home_ownership will be provided to a separate Logistic Regression run, separately from the 2x2 findings. A .csv file will be produced with every column having a 'set1' or 'both' flag, as well as a reason for exclusion within Set 2. The exclusion decisions can be seen in explore_cohort.py, with columns grouped in lists named by exclusion reason.
+
+Why: Since the model predicts default, the only features it should use for it to be able to be applied to a new dataset are the ones that would be available at the time of application for the loan. Moreover, columns that have values that are near-unique per row let a GBM split on values that identify individual rows, so the training score rises while nothing transfers to a new applicant. Furthermore, a feature that, in combination with others, can reconstruct an excluded feature from one of the sets needs to be excluded in order to completely isolate the two cases. Lastly, the inclusion of the relationship column for dti and home_ownership is done since GBM can handle this relationship by itself, where LR cannot, therefore the columns dti x (rent, own, mortgage) will be included in order to help LR separate the dti slope per housing status. The run will happen in Set 2, reported whichever way it goes.
+
+Cost: The exclusions can potentially drop columns that carry a signal, but in order to make the model applicable to other datasets, and the actual concept of the 2x2 viable, this is a tradeoff worth having. Furthermore, the columns are carefully excluded by hand, but subjectively justified exclusion remains possible. Test 2 also does not have a specified cutoff, so the criterion rests on personal judgement.
+
 # 5
 
-Decision: Restrict int_rate, grade and sub_grade to Set 1 of the 2x2; Set 2 excludes all three.
+Decision: Restrict int_rate, grade, sub_grade, and every feature that reconstructs them to Set 1 of the 2x2; Set 2 excludes all of them.
 
 Why: Firstly, these three parameters run hand in hand: Lending Club assigns the interest rate (int_rate) based on how its own model grades applicants. Secondly, even though int_rate is obviously a very useful parameter for measuring the chance of a loan ending up charged off, it cannot be used in both Set 1 and Set 2. Set 2 is defined as being without Lending Club's model output, and int_rate is that output in another unit. Thirdly, keeping only int_rate leaves the logistic regression worse served: without sub_grade it cannot build the step function a GBM builds from int_rate alone. Grade is subsumed by sub_grade and adds nothing beyond it. This matters for reading the result - if the two models converge in Set 1, that is partly the feature set serving the logistic regression, not only the algorithms performing alike.
 
-Cost: Set 2 cannot include int_rate at all. The rate sets the monthly payment, so it is a causal driver of default, not only a proxy for Lending Club's opinion. Set 2 loses a real variable, and the column cannot be split into its two roles.
+Cost: Set 2 cannot include int_rate at all, nor anything that reconstructs it (installment, etc.). The rate sets the monthly payment, so it is a causal driver of default, not only a proxy for Lending Club's opinion. Set 2 loses a real variable, and the column cannot be split into its two roles.
 
 # 9
 
