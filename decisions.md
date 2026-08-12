@@ -24,7 +24,7 @@ Why: Originally, loans issued in both 2015 and 2016 were considered. There are m
 
 The 2012–2014 vintages were also considered but left out. 2015 is the most recent fully-matured vintage, so its underwriting regime is closest to the one a deployed model would score. Lending Club's 36-month volume also grew from ~43k in 2012 to ~283k in 2015, so pooling would combine materially different applicant populations. Bad rates across 2012–2015 run 12.3–14.9%, but a stable marginal bad rate does not imply a stable relationship between features and default, so it is not the evidence for this decision.
 
-Cost: ~270,000 loans from the 2016 vintage, ~306,000 loans (~40,000 bad events) from 2012–2014, and 239 joint loans in 2015.
+Cost: 318,277 loans from the 2016 vintage, ~306,000 loans (~40,000 bad events) from 2012–2014, and 239 joint loans in 2015.
 
 # 3
 
