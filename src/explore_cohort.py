@@ -102,7 +102,7 @@ joint = [c for c in cohort.columns if c.startswith('sec_app_')] + [
     'annual_inc_joint', 'dti_joint', 'verification_status_joint',
     'revol_bal_joint', 'application_type']
 
-post_origination = [c for c in cohort.columns
+post_application = [c for c in cohort.columns
                     if c.startswith(('hardship_', 'settlement_', 'debt_settlement'))] + [
     'collection_recovery_fee', 'deferral_term', 'last_credit_pull_d',
     'last_fico_range_high', 'last_fico_range_low', 'last_pymnt_amnt',
@@ -111,9 +111,7 @@ post_origination = [c for c in cohort.columns
     'recoveries', 'total_pymnt', 'total_pymnt_inv', 'total_rec_int',
     'total_rec_late_fee', 'total_rec_prncp', 'funded_amnt_inv', 'funded_amnt']
 
-redundant = []
-
-drop = identifiers + joint + post_origination + redundant
+drop = identifiers + joint + post_application
 assert len(drop) == len(set(drop))          
 cohort = cohort.drop(columns=drop)          
 print(cohort.shape)                         
