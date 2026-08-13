@@ -9,8 +9,6 @@ c = pd.read_parquet('data/cohort.parquet')
 h = c.apply(lambda s: pd.util.hash_pandas_object(s, index=False).sum())
 print(h[h.duplicated(keep=False)])
 
-print(c['earliest_cr_line'].dtype)
-
 # the check for Test 1 for all columns, checking number of distinct values and number of empty values per column.
 # many candidates excluded - see 'verdicts' dictionary.
 
@@ -40,6 +38,10 @@ print(pd.crosstab(c['title'], c['purpose']))
 # excluded since at least 1/4 of the levels hold 66 or fewer loans, roughly 10 bad events, too few to estimate a rate from.
 
 print(c['zip_code'].value_counts().describe())
+
+# confirmation for date claim.
+
+print(c['earliest_cr_line'].dtype)
 
 # create features.csv - see decisions.md #4.
 # runs every time, so the .csv should not be changed by hand, since every run discards it.
@@ -74,6 +76,14 @@ verdicts = {
     'grade':       ('set1',     'derived from the LC model, included only in Set 1 by decisions.md #5'),        
     'sub_grade':   ('set1',     'derived from the LC model, included only in Set 1 by decisions.md #5'),
     'installment': ('set1',     'can derive int_rate in combination with loan_amnt, considering every loan is 36 months, included only in Set 1 by Test 4'),
+
+    # notes on admitted columns, not exclusions.
+    
+    'earliest_cr_line': ('both', 'a date, not a duration. converted to months of credit history at modelling, see the encoding entry'),
+    'emp_length':       ('both', 'an ordinal held as text with a capped top level. mapped to numbers at modelling, see the encoding entry'),
+    'mo_sin_old_il_acct':       ('both', 'the column has no published description in either dictionary sheet, and its Test 2 timing is inferred from mo_sin_old_rev_tl_op'),
+    'mths_since_recent_bc_dlq': ('both', 'the column has no published description in either dictionary sheet, and its Test 2 timing is inferred from mths_since_recent_bc'),
+    'mths_since_recent_inq':    ('both', 'the column has no published description in either dictionary sheet, and its Test 2 timing is inferred from inq_last_6mths'),
 }
 
 f = pd.DataFrame({'column': c.columns})

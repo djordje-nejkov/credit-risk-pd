@@ -6,7 +6,7 @@ installment,set1,"can derive int_rate in combination with loan_amnt, considering
 grade,set1,"derived from the LC model, included only in Set 1 by decisions.md #5"
 sub_grade,set1,"derived from the LC model, included only in Set 1 by decisions.md #5"
 emp_title,excluded,"has 86,091 levels, excluded by Test 3"
-emp_length,both,
+emp_length,both,"an ordinal held as text with a capped top level. mapped to numbers at modelling, see the encoding entry"
 home_ownership,both,
 annual_inc,both,
 verification_status,both,
@@ -19,7 +19,7 @@ zip_code,excluded,"at least 1/4 of the levels hold 66 or fewer loans, which is u
 addr_state,both,
 dti,both,
 delinq_2yrs,both,
-earliest_cr_line,both,
+earliest_cr_line,both,"a date, not a duration. converted to months of credit history at modelling, see the encoding entry"
 fico_range_low,both,
 fico_range_high,both,
 inq_last_6mths,both,
@@ -58,14 +58,14 @@ bc_open_to_buy,both,
 bc_util,both,
 chargeoff_within_12_mths,both,
 delinq_amnt,both,
-mo_sin_old_il_acct,both,
+mo_sin_old_il_acct,both,"the column has no published description in either dictionary sheet, and its Test 2 timing is inferred from mo_sin_old_rev_tl_op"
 mo_sin_old_rev_tl_op,both,
 mo_sin_rcnt_rev_tl_op,both,
 mo_sin_rcnt_tl,both,
 mort_acc,both,
 mths_since_recent_bc,both,
-mths_since_recent_bc_dlq,both,
-mths_since_recent_inq,both,
+mths_since_recent_bc_dlq,both,"the column has no published description in either dictionary sheet, and its Test 2 timing is inferred from mths_since_recent_bc"
+mths_since_recent_inq,both,"the column has no published description in either dictionary sheet, and its Test 2 timing is inferred from inq_last_6mths"
 mths_since_recent_revol_delinq,both,
 num_accts_ever_120_pd,both,
 num_actv_bc_tl,both,
