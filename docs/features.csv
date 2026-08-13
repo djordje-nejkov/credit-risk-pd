@@ -14,7 +14,7 @@ issue_d,excluded,"not a constant, but a model trained on 2015 loans scored on a 
 loan_status,target,the charge-off the model predicts
 desc,excluded,"has 39 populated rows, excluded by Test 1"
 purpose,both,
-title,both,
+title,excluded,"title and purpose are one variable in two encodings, purpose is the representation kept"
 zip_code,excluded,"at least 1/4 of the levels hold 66 or fewer loans, which is unmodellable, excluded by Test 3"
 addr_state,both,
 dti,both,
@@ -37,21 +37,21 @@ policy_code,excluded,"has 1 value across all rows, excluded by Test 1"
 acc_now_delinq,both,
 tot_coll_amt,both,
 tot_cur_bal,both,
-open_acc_6m,both,
-open_act_il,both,
-open_il_12m,both,
-open_il_24m,both,
-mths_since_rcnt_il,both,
-total_bal_il,both,
-il_util,both,
-open_rv_12m,both,
-open_rv_24m,both,
-max_bal_bc,both,
-all_util,both,
+open_acc_6m,excluded,"coverage is confined to December, so the populated rows carry one month of the vintage rather than a sample of it, excluded by Test 1"
+open_act_il,excluded,"coverage is confined to December, so the populated rows carry one month of the vintage rather than a sample of it, excluded by Test 1"
+open_il_12m,excluded,"coverage is confined to December, so the populated rows carry one month of the vintage rather than a sample of it, excluded by Test 1"
+open_il_24m,excluded,"coverage is confined to December, so the populated rows carry one month of the vintage rather than a sample of it, excluded by Test 1"
+mths_since_rcnt_il,excluded,"coverage is confined to December, so the populated rows carry one month of the vintage rather than a sample of it, excluded by Test 1"
+total_bal_il,excluded,"coverage is confined to December, so the populated rows carry one month of the vintage rather than a sample of it, excluded by Test 1"
+il_util,excluded,"coverage is confined to December, so the populated rows carry one month of the vintage rather than a sample of it, excluded by Test 1"
+open_rv_12m,excluded,"coverage is confined to December, so the populated rows carry one month of the vintage rather than a sample of it, excluded by Test 1"
+open_rv_24m,excluded,"coverage is confined to December, so the populated rows carry one month of the vintage rather than a sample of it, excluded by Test 1"
+max_bal_bc,excluded,"coverage is confined to December, so the populated rows carry one month of the vintage rather than a sample of it, excluded by Test 1"
+all_util,excluded,"coverage is confined to December, so the populated rows carry one month of the vintage rather than a sample of it, excluded by Test 1"
 total_rev_hi_lim,both,
-inq_fi,both,
-total_cu_tl,both,
-inq_last_12m,both,
+inq_fi,excluded,"coverage is confined to December, so the populated rows carry one month of the vintage rather than a sample of it, excluded by Test 1"
+total_cu_tl,excluded,"coverage is confined to December, so the populated rows carry one month of the vintage rather than a sample of it, excluded by Test 1"
+inq_last_12m,excluded,"coverage is confined to December, so the populated rows carry one month of the vintage rather than a sample of it, excluded by Test 1"
 acc_open_past_24mths,both,
 avg_cur_bal,both,
 bc_open_to_buy,both,

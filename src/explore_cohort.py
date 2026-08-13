@@ -12,6 +12,7 @@ print(df.shape[0], df.shape[1])
 
 df['issue_d'] = pd.to_datetime(df['issue_d'], format='%b-%Y')
 df['last_pymnt_d'] = pd.to_datetime(df['last_pymnt_d'], format='%b-%Y')
+df['earliest_cr_line'] = pd.to_datetime(df['earliest_cr_line'], format='%b-%Y')
 df['term'] = df['term'].str.strip()
 
 # check for whether running through the feature dictionary (found in /docs) is enough to decide which features to keep for modelling.
