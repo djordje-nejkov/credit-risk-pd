@@ -54,6 +54,16 @@ The 91 columns in the parquet were split into bureau attributes and loan terms. 
 
 Cost: Set 2 cannot include int_rate at all, nor anything that reconstructs it (installment, etc.). The rate sets the monthly payment, so it is a causal driver of default, not only a proxy for Lending Club's opinion. Set 2 loses a real variable, and the column cannot be split into its two roles. Furthermore, the bureau attributes vs loan terms argument doesn't rest on something reproducible, but rather the hand classification of the columns.
 
+# 6
+
+Decision: The cohort will be split into three parts: Q1-Q2 will be used for training the models. Q3 will be used for validation, meaning choosing between the 20 GBM configurations. Q4 will be used for testing, and the reported scores will be measured on this slice of the cohort. The encoding patterns for both models are learned on the training slices and applied to the other two. Moreover, both models will see the identical slices for training, validation and testing.
+
+Why: The ordering is respected since a deployed model is fitted on the past and used to score the future. Even though the cohort only consists of loans issued in 2015, the stability of it is unverified. A random split would assume exchangeability that there is no evidence for.
+
+Three slices are used rather than two, in order to report the score from a slice used neither for training nor for selecting the winning GBM configuration. Two slices would mean reporting the findings from the same data that picked the configuration, meaning that it would be a score reported by being high on that specific slice, not being the best configuration overall.
+
+Cost: The testing slice is Q4 alone, which carries the possible December changes seen from the 14 excluded features beginning to be kept track of at this time, see #4 - Why. Furthermore, stratification is not possible, so the bad rate for the test slice is whatever the bad rate in Q4 was, though in our example Q4's default rate is actually 14.81%, stable. Lastly, the training split is smaller than a random split would warrant, 120,790 loans in Q1+Q2 to 282,787 in 2015 all together.
+
 # 9
 
 Decision: A finding is defined as either GBM's and Logistic Regression's difference being inside noise, or outside it. V1 is done when all six pieces exist and the budget of 20 configurations is spent, whatever the comparison shows. Scores are reported on a slice used neither for training nor for choosing the winning configuration.
