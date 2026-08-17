@@ -1,6 +1,6 @@
 ﻿# Decisions
 
-# 1
+# 1 Dataset
 
 Decision: Lending Club dataset over German Credit dataset.
 
@@ -16,7 +16,7 @@ Why:
 
 Cost: Since lending club is a peer to peer marketplace, the general applicant would be of a different nature: it's unsecured, and more often debt-consolidation heavy, therefore the findings could not really transfer for a bank applicant, though the methodology of building a model stands.
 
-# 2
+# 2 Cohort
 
 Decision: The cohort is individual, 36-month loans issued in Q1–Q4 of 2015.
 
@@ -26,7 +26,7 @@ The 2012–2014 vintages were also considered but left out. 2015 is the most rec
 
 Cost: 318,277 loans from the 2016 vintage, ~306,000 loans (~40,000 bad events) from 2012–2014, and 239 joint loans in 2015.
 
-# 3
+# 3 Target definition
 
 Decision: Charged Off = bad, Fully Paid = good, the 147 indeterminate 2015 loans excluded.
 
@@ -34,7 +34,7 @@ Why: Only those two statuses are settled outcomes. Forcing a label on 147 rows o
 
 Cost: Since Lending Club gives terminal status only, no payment history, a borrower who never missed a payment doesn't get distinguished from one who hit the conventional 60 or 90 DPD, which by global bank terms is considered bad, and then recovered. That contamination sits in a class of 240,698, where it is hardest to detect.
 
-# 4
+# 4 Feature eligibility
 
 Decision: Modeling features are judged based on four tests, run sequentially, and admitted only if all four hold: 1. the column has content to model, and that content is not confined to a slice the cohort created, 2. the column is knowable at application, 3. the column's levels hold enough rows to estimate a rate from, and the non-modal values (rows that carry any value other than the most common one) are well represented. This is applied to categorical and numerical columns with different checks (see explore_features.py for the different checks), and 4. the column does not reconstruct a feature deliberately excluded from one of the sets, in combination with others. Test 4 is set relative, so it only applies to Set 2, where features derived from Lending Club's own model are excluded. Installment is a feature that will be included in Set 1, but not in Set 2, since in combination with loan_amnt it can recover int_rate. Further on this in #5. The order decides the stated reason for dropping a column in the event it violates more than one condition. Joint columns are excluded under #2. The column for the relationship between dti and home_ownership will be provided to a separate Logistic Regression run, separately from the 2x2 findings. A .csv file will be produced with every column having a 'set1' or 'both' flag for included features, and an 'excluded' flag marking columns excluded after further evaluation, as well as a reason for exclusion within Set 2. A 'target' flag is also present, used only for loan_status. The exclusion decisions for features decidable from the documentation can be seen in explore_cohort.py, with columns grouped in lists named by exclusion reason, while features requiring measurement on the cohort are excluded in explore_features.py, with the reason recorded in the .csv.
 
@@ -44,7 +44,7 @@ Regarding Test 1's criterion: it is what determines the missingness, and not nec
 
 Cost: The exclusions can potentially drop columns that carry a signal, but in order to make the model applicable to other datasets, and the actual concept of the 2x2 viable, this is a tradeoff worth having. Furthermore, the columns are carefully excluded by hand, but subjectively justified exclusion remains possible. Test 3's criterion is rows per level, but the threshold is not specified, so where the line falls between zip_code's median of 153 and addr_state's several thousand rests on personal judgement. This extends to the non-modal row count threshold, where num_tl_120dpd_2m was excluded with 189 non-modal rows, while num_tl_30dpd was kept with 1,051. Furthermore, the 14 columns excluded under having their content confined to a slice would presumably be populated in a newer cohort, since December 2015 being populated while the rest of the year is empty leads to an assumption that December 2015 is the period where data for these features started to be collected.
 
-# 5
+# 5 Feature set split
 
 Decision: Restrict int_rate, grade, sub_grade, and every feature that reconstructs them to Set 1 of the 2x2; Set 2 excludes all of them. Bureau attributes are kept in both sets.
 
@@ -54,9 +54,9 @@ The 91 columns in the parquet were split into bureau attributes and loan terms. 
 
 Cost: Set 2 cannot include int_rate at all, nor anything that reconstructs it (installment, etc.). The rate sets the monthly payment, so it is a causal driver of default, not only a proxy for Lending Club's opinion. Set 2 loses a real variable, and the column cannot be split into its two roles. Furthermore, the bureau attributes vs loan terms argument doesn't rest on something reproducible, but rather the hand classification of the columns.
 
-# 6
+# 6 Data split
 
-Decision: The cohort will be split into three parts: Q1-Q2 will be used for training the models. Q3 will be used for validation, meaning choosing between the 20 GBM configurations. Q4 will be used for testing, and the reported scores will be measured on this slice of the cohort. The encoding patterns for both models are learned on the training slices and applied to the other two. Moreover, both models will see the identical slices for training, validation and testing.
+Decision: The cohort will be split into three parts: Q1-Q2 will be used for training the models. Q3 will be used for validation, meaning choosing between the 20 model configurations. Q4 will be used for testing, and the reported scores will be measured on this slice of the cohort. The encoding patterns for both models are learned on the training slices and applied to the other two. Moreover, both models will see the identical slices for training, validation and testing. 
 
 Why: The ordering is respected since a deployed model is fitted on the past and used to score the future. Even though the cohort only consists of loans issued in 2015, the stability of it is unverified. A random split would assume exchangeability that there is no evidence for.
 
@@ -64,7 +64,7 @@ Three slices are used rather than two, in order to report the score from a slice
 
 Cost: The testing slice is Q4 alone, which carries the possible December changes seen from the 14 excluded features beginning to be kept track of at this time, see #4 - Why. Furthermore, stratification is not possible, so the bad rate for the test slice is whatever the bad rate in Q4 was, though in our example Q4's default rate is actually 14.81%, stable. Lastly, the training split is smaller than a random split would warrant, 120,790 loans in Q1+Q2 to 282,787 in 2015 all together.
 
-# 7
+# 7 Encoding
 
 Decision: Continuous columns are standardised; dummy and near-constant columns are left as they are. Standardisation corrects for an arbitrary choice of units, and a dummy's scale is not a unit choice — it reflects how rare the level is, which is real information. Standardising it would shrink the penalty on precisely the coefficients that are estimated from fewest rows.
 
@@ -72,10 +72,26 @@ Why:
 
 Cost:
 
-# 9
+# 8 Threshold
 
-Decision: A finding is defined as either GBM's and Logistic Regression's difference being inside noise, or outside it. V1 is done when all six pieces exist and the budget of 20 configurations is spent, whatever the comparison shows. Scores are reported on a slice used neither for training nor for choosing the winning configuration.
+Decision:
 
-Why: Since both GBM and Logistic Regression get the same treatment regarding training and scoring, either finding is considered sufficient since we have no grounds in advance to reason one being better than the other. Moreover, trying to get one model to be better than the other has no real stopping point, since these kinds of models can always be improved by providing more thorough training or using more configurations.
+Why:
 
-Cost: The 20 configurations being a relatively low number poses risk that the findings may not represent the true potential of the GBM model, since there is a fair chance the model gets a worse best-case result than a model with 60 configurations would.
+Cost:
+
+# 9 Stopping rule
+
+Decision: A finding is defined as either GBM's and Logistic Regression's difference being inside noise, or outside it. V1 is done when all six pieces exist and the budget of LR's 7 and GBM's 20 configurations is spent, whatever the comparison shows. Scores are reported on a slice used neither for training nor for choosing the winning configuration.
+
+Why: Since both GBM and Logistic Regression get the same treatment regarding training and scoring, meaning both get trained, validated and tested on the same slices, either finding is considered sufficient since we have no grounds in advance to reason one being better than the other. Moreover, trying to get one model to be better than the other has no real stopping point, since these kinds of models can always be improved by providing more thorough training or using more configurations. Regarding GBM getting 20 configurations while LR gets 7, GBM adjusts several knobs at once, while LR has one parameter with an already sufficient span, from 0.001 to 100, and also inf. Trying to equate the counts would be arbitrary rather than fair.
+
+Cost: The 20 configurations being a relatively low number poses risk that the findings may not represent the true potential of the GBM model, since there is a fair chance the model gets a worse best-case result than a model with 60 configurations would. LR's 7 configurations is much better coverage for its single changing parameter, though the 0.001 - 100 range is the conventional range, and not necessarily the one that covers the useful range of the penalty coefficient.
+
+# 10 Calibration
+
+Decision:
+
+Why:
+
+Cost:
