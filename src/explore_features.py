@@ -9,39 +9,69 @@ c = pd.read_parquet('data/cohort.parquet')
 h = c.apply(lambda s: pd.util.hash_pandas_object(s, index=False).sum())
 print(h[h.duplicated(keep=False)])
 
-# the check for Test 1 for all columns, checking number of distinct values and number of empty values per column.
-# many candidates excluded - see 'verdicts' dictionary.
+# check for exclusions under decisions.md #4, the verdicts stated in the 'verdicts' dictionary with the exclusion reason.
 
-print(c.isna().sum().sort_values(ascending=False).head(30))
-print(c.nunique().sort_values().to_string())
+def check_exclusions():
 
-# check for why such columns have no content.
-# bimodal shows either a row has these columns empty or fully filled.
+    # the check for Test 1 for all columns, checking number of distinct values and number of empty values per column.
+    # many candidates excluded - see 'verdicts' dictionary.
 
-block = ['open_acc_6m','open_act_il','open_il_12m','open_il_24m','total_bal_il','open_rv_12m',
-         'open_rv_24m','max_bal_bc','all_util','inq_fi','total_cu_tl','inq_last_12m']
-print(c[block].isna().sum(axis=1).value_counts())
+    print(c.isna().sum().sort_values(ascending=False).head(30))
+    print(c.nunique().sort_values().to_string())
 
-# check for what is the cause of the finding above, found that coverage for block is confined to December 2015.
+    # check for why such columns have no content.
+    # bimodal shows either a row has these columns empty or fully filled.
 
-# il_util and mths_since_rcnt_il are excluded from block since some borrowers might not have installment accounts, so the 0 or 14 claim if
-# they were included in 'block' wouldn't hold, unlike the 0 or 12 one.
+    block = ['open_acc_6m','open_act_il','open_il_12m','open_il_24m','total_bal_il','open_rv_12m',
+            'open_rv_24m','max_bal_bc','all_util','inq_fi','total_cu_tl','inq_last_12m']
+    print(c[block].isna().sum(axis=1).value_counts())
 
-print(c.groupby(c['issue_d'].dt.month)[['open_acc_6m','il_util','mths_since_rcnt_il']].apply(lambda d: d.notna().mean()))
+    # check for what is the cause of the finding above, found that coverage for block is confined to December 2015.
 
-# check for redundancy, every meaningful value for title exists in purpose, and purpose is more machine readable, title dropped.
+    # il_util and mths_since_rcnt_il are excluded from block since some borrowers might not have installment accounts, so the 0 or 14 claim if
+    # they were included in 'block' wouldn't hold, unlike the 0 or 12 one.
 
-print(pd.crosstab(c['title'], c['purpose']))
+    print(c.groupby(c['issue_d'].dt.month)[['open_acc_6m','il_util','mths_since_rcnt_il']].apply(lambda d: d.notna().mean()))
 
-# check for consistent number of inclusion of all zipcodes.
-# at least one value is found in a single row, 25% have 66 or fewer and 50% have 153 or fewer.
-# excluded since at least 1/4 of the levels hold 66 or fewer loans, roughly 10 bad events, too few to estimate a rate from.
+    # check for redundancy, every meaningful value for title exists in purpose, and purpose is more machine readable, title dropped.
 
-print(c['zip_code'].value_counts().describe())
+    print(pd.crosstab(c['title'], c['purpose']))
 
-# confirmation for date claim.
+    # check for consistent number of inclusion of all zipcodes.
+    # at least one value is found in a single row, 25% have 66 or fewer and 50% have 153 or fewer.
+    # excluded since at least 1/4 of the levels hold 66 or fewer loans, roughly 10 bad events, too few to estimate a rate from.
+    # decisions.md Test 3 - check for categorical columns.
 
-print(c['earliest_cr_line'].dtype)
+    print(c['zip_code'].value_counts().describe())
+
+    # confirmation for date claim.
+
+    print(c['earliest_cr_line'].dtype)
+
+    # check for any features that may have a single overrepresented value.
+    # found that num_tl_120dpd_2m, with 5 unique values seen from a check above, has 189 rows with values that are not the mode value (the most common one).
+    # out of the 189, 33 went bad, therefore 4/5 values have 189 cases between them. dropped.
+    # decisions.md Test 3 - check for numerical columns.
+
+    bad = c['loan_status'] == 'Charged Off'
+    rows = []
+    for col in c.select_dtypes('number').columns:
+        s = c[col]
+        m = s.mode(dropna=True)
+        if m.empty:
+            continue
+        off = s.notna() & (s != m.iloc[0])
+        rows.append({
+            'column': col,
+            'mode': m.iloc[0],
+            'off_mode': int(off.sum()),
+            'off_mode_bad': int((off & bad).sum()),
+            'missing': int(s.isna().sum()),
+        })
+    print(pd.DataFrame(rows).sort_values('off_mode').to_string(index=False))
+
+
+check_exclusions()
 
 # create features.csv - see decisions.md #4.
 # runs every time, so the .csv should not be changed by hand, since every run discards it.
@@ -55,6 +85,7 @@ verdicts = {
     'term': ('excluded', 'has 1 value across all rows because it was restricted by the cohort, excluded by Test 1'),
     'issue_d': ('excluded', 'not a constant, but a model trained on 2015 loans scored on a new applicant has no use for this field. it is the funding month, which is after approval, excluded by Test 2'),
     'title': ('excluded', 'title and purpose are one variable in two encodings, purpose is the representation kept'),
+    'num_tl_120dpd_2m': ('excluded', 'non-modal values are thinly represented, 189 rows across 4 distinct non-modal values with 33 bad events, excluded by Test 3'),
 
     'open_acc_6m':        ('excluded', 'coverage is confined to December, so the populated rows carry one month of the vintage rather than a sample of it, excluded by Test 1'),
     'open_act_il':        ('excluded', 'coverage is confined to December, so the populated rows carry one month of the vintage rather than a sample of it, excluded by Test 1'),
@@ -91,5 +122,41 @@ f['feature_set'] = f['column'].map(lambda x: verdicts.get(x, ('both', ''))[0])
 f['reason'] = f['column'].map(lambda x: verdicts.get(x, ('both', ''))[1])
 f.to_csv('docs/features.csv', index=False)
 print(f['feature_set'].value_counts())
+
+# check for columns excluded from standardization under decisions.md #7.
+
+def check_missingness():
+
+    # asks whether when limit = 0, the bc_util (bankcard utilization) is left empty or = 0.
+    # 2831 cases of the prior were found, while there were 253 cases where bc_util has a value (0).
+    # we cannot determine from the data why this is, and why either are all not = 0 or left empty.
+
+    miss = c['bc_util'].isna()
+    print(pd.crosstab(miss, c['total_bc_limit'] == 0))
+
+    # check whether missing indicators mean the borrower does not have a bankcard.
+    # all three crosstabs agree that 631 borrowers do not have a bankcard, but around 80% of each column's missing
+    # rows belong to borrowers who do.
+    # from this we can see that a value missing doesn't mean no bankcard, but rather the value not being reported.
+
+    for col in ['bc_open_to_buy', 'percent_bc_gt_75', 'mths_since_recent_bc']:
+        print(col)
+        print(pd.crosstab(c[col].isna(), c['num_bc_tl'] == 0), '\n')
+
+    # characterise the odd 253 rows. found that num_bc_tl mean is 3.5, meaning there are borrowers who have bankcards but still have bc_util = 0.
+    # this means that these 253 borrowers cannot be separated from the population that has a limit but util = 0, meaning
+    # genuine 0% utilization of the limit.
+
+    odd = (c['bc_util'].notna()) & (c['total_bc_limit'] == 0)
+    print(c.loc[odd, ['bc_util', 'num_bc_tl', 'bc_open_to_buy']].describe())
+
+    # check how many of the bankcard columns are missing per row. out of the 4, all of them are missing in
+    # 2,652/3,279 rows, while the remaining 627 are missing one, two or three.
+
+    bc = ['bc_util','bc_open_to_buy','percent_bc_gt_75','mths_since_recent_bc']
+    print(c[bc].isna().sum(axis=1).value_counts().sort_index())
+
+
+check_missingness()
 
 

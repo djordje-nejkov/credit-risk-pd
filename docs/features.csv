@@ -77,7 +77,7 @@ num_op_rev_tl,both,
 num_rev_accts,both,
 num_rev_tl_bal_gt_0,both,
 num_sats,both,
-num_tl_120dpd_2m,both,
+num_tl_120dpd_2m,excluded,"non-modal values are thinly represented, 189 rows across 4 distinct non-modal values with 33 bad events, excluded by Test 3"
 num_tl_30dpd,both,
 num_tl_90g_dpd_24m,both,
 num_tl_op_past_12m,both,
