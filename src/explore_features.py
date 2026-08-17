@@ -9,6 +9,8 @@ c = pd.read_parquet('data/cohort.parquet')
 h = c.apply(lambda s: pd.util.hash_pandas_object(s, index=False).sum())
 print(h[h.duplicated(keep=False)])
 
+bad = c['loan_status'] == 'Charged Off'
+
 # check for exclusions under decisions.md #4, the verdicts stated in the 'verdicts' dictionary with the exclusion reason.
 
 def check_exclusions():
@@ -18,6 +20,12 @@ def check_exclusions():
 
     print(c.isna().sum().sort_values(ascending=False).head(30))
     print(c.nunique().sort_values().to_string())
+
+    # check for whether length and title of employment are application-time metrics.
+    # 99% overlap between the two, meaning LC did not need to independently verify both post-application,
+    # which would be indicated by a larger percentage of only one of the two missing.
+
+    print(pd.crosstab(c['emp_length'].notna(), c['emp_title'].notna()))
 
     # check for why such columns have no content.
     # bimodal shows either a row has these columns empty or fully filled.
@@ -53,7 +61,6 @@ def check_exclusions():
     # out of the 189, 33 went bad, therefore 4/5 values have 189 cases between them. dropped.
     # decisions.md Test 3 - check for numerical columns.
 
-    bad = c['loan_status'] == 'Charged Off'
     rows = []
     for col in c.select_dtypes('number').columns:
         s = c[col]
@@ -146,15 +153,53 @@ def check_missingness():
     # characterise the odd 253 rows. found that num_bc_tl mean is 3.5, meaning there are borrowers who have bankcards but still have bc_util = 0.
     # this means that these 253 borrowers cannot be separated from the population that has a limit but util = 0, meaning
     # genuine 0% utilization of the limit.
+    # the 2831 missing rows will get filled with 0, as well as be assigned a missing indicator.
 
     odd = (c['bc_util'].notna()) & (c['total_bc_limit'] == 0)
     print(c.loc[odd, ['bc_util', 'num_bc_tl', 'bc_open_to_buy']].describe())
+    
+    # check for whether the same assignment holds for bc_open_to_buy.
+    # every missing row has limit = 0, so the same assignment of 0 applies to bc_open_to_buy's empty rows as well.
+
+    print(pd.crosstab(c['bc_open_to_buy'].isna(), c['total_bc_limit'] == 0))
 
     # check how many of the bankcard columns are missing per row. out of the 4, all of them are missing in
     # 2,652/3,279 rows, while the remaining 627 are missing one, two or three.
 
     bc = ['bc_util','bc_open_to_buy','percent_bc_gt_75','mths_since_recent_bc']
     print(c[bc].isna().sum(axis=1).value_counts().sort_index())
+
+    # check if borrowers missing one of the remaining bankcard parameters have a different bad rate than the borrowers that have the parameter.
+    # missing bad rate was 0.17, 0.169 and 0.171 for the missing groups respectively, compared to ~0.1485 for the present group.
+    # median will be used to fill percent_bc_gt_75 and mths_since_recent_bc, since a deviation of 2 points from the average default rate is acceptable,
+    # and bc_util and bc_open_to_buy are already decided to be filled with 0.
+
+    for col in ['percent_bc_gt_75', 'bc_open_to_buy', 'mths_since_recent_bc']:
+        m = c[col].isna()
+        print(col)
+        print('  missing:', m.sum(), 'bad rate:', round(bad[m].mean(), 4))
+        print('  present bad rate:', round(bad[~m].mean(), 4))
+        print('  present median:', c.loc[~m, col].median())
+
+    # check for whether the no bankcard borrowers have a higher default rate than the ones who have the value missing.
+    # 0.1965 bad rate for the no bankcard group, 0.1639 for the unreported group.
+    # a shared indicator will be used, collapsing the rates into 0.17, still higher than 0.1485 present rate.
+
+    m = c['percent_bc_gt_75'].isna()
+    nocard = c['num_bc_tl'] == 0
+    print('no bankcard: ', (m & nocard).sum(), round(bad[m & nocard].mean(), 4))
+    print('unreported:  ', (m & ~nocard).sum(), round(bad[m & ~nocard].mean(), 4))
+
+    # check for whether the missing rows have a different default rate than the filled rows.
+    # the missing rows have a default rate of 0.2157, while the filled ones range from
+    # 0.1333 - 0.1574.
+    # since the blank carries more discrimination, it will be flagged with a missingness indicator.
+
+    lvl = c['emp_length'].fillna('MISSING')
+    t = lvl.value_counts().rename('n').to_frame()
+    t['bad'] = bad.groupby(lvl).sum()
+    t['bad_rate'] = (t['bad'] / t['n']).round(4)
+    print(t.to_string())
 
 
 check_missingness()
