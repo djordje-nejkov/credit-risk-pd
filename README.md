@@ -26,7 +26,6 @@ The cohort is restricted to individual 36-month loans issued in Q1–Q4 of 2015,
 
 Every loan in the file was approved and funded, so the models estimate default risk conditional on acceptance. The population is itself the output of Lending Club's own filter, which means the models say nothing about anyone Lending Club turned away. The declined population is available and deliberately not used, because it has no outcome to model.
 
-
 ## 3. Target definition
 
 Since the model predicts default, a bad/Charged Off loan is labelled 1 and a good/Fully Paid loan 0. These are the target's two possible states; the model outputs a probability of default between 0 and 1. Of the resolved loans, 14.9% defaulted - 240,698 good against 42,089 bad. A further 147 loans from 2015 are dropped because their outcome is indeterminate, so not yet concluded.
@@ -41,7 +40,13 @@ The definition is limited in that a loan reaching 60 or 90 days past due (DPD), 
 
 ## 5. Features
 
-*TODO*
+As the model predicts whether an applicant will default, the only features it can use in the predictions are the ones available at the time of application, therefore everything that can be inferred to be post-application is automatically excluded. The easily observable exclusions can be seen in explore_cohort.py, whereas the ones that would require further examining to confirm whether they are pre-application are examined in explore_features.py.
+
+There are 4 tests that determine whether the feature is kept or excluded from modelling, they are: 1. whether the feature has enough content to model, 2. whether it's knowable at application, 3. whether its levels have enough rows to estimate a rate from, 4. whether it reconstructs an excluded feature. These tests run in order, and a column's stated reason for exclusion is the one it failed first. Test 2's timing for mo_sin_old_il_acct, mths_since_recent_bc_dlq and mths_since_recent_inq is inferred from related columns rather than from the data dictionary, which has no published description for them. Further on this in decisions.md #4.
+
+The parquet created in explore_cohort.py lists 91/151 features that survived the initial check. Of those 91, in the end: 64 features are included in both sets, with 22 excluded from both, 4 only being in set 1 and 1 (loan_status) being the target. The exclusion reasons for the excluded features can be found in features.csv.
+
+Regarding the 4 features only being in set 1, they are features derived from Lending Club's own model output, and set 2 is defined as being without these features. Further on this in decisions.md #5.
 
 ## 6. Results
 
