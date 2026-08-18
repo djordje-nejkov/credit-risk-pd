@@ -134,6 +134,19 @@ print(f['feature_set'].value_counts())
 
 def check_missingness():
 
+    # check for whether it is viable to exclude the NaN rows instead of determining fills.
+    # 3.07% of the cohort is kept, which is 8,674, and at 0.1765 bad rate, 1,531 events.
+    # this occurs since missing on the mths_since_* columns means the event never happened, 
+    # so dropna() keeps only borrowers who have a delinquency, a public record and a major derogatory.
+    # at ~140 features, around 11 events per feature, the floor for modelling.
+
+    both = f.loc[f['feature_set'] == 'both', 'column'].tolist()
+    res = c[c['loan_status'].isin(['Charged Off', 'Fully Paid'])]
+    surv = res[both].dropna()
+    print('survivors:', len(surv), '/', len(res), round(len(surv) / len(res), 4))
+    print('survivor bad rate:', round(bad[surv.index].mean(), 4), 'vs cohort', round(bad[res.index].mean(), 4))
+    print('columns after one-hot:', pd.get_dummies(res[both]).shape[1])
+
     # asks whether when limit = 0, the bc_util (bankcard utilization) is left empty or = 0.
     # 2831 cases of the prior were found, while there were 253 cases where bc_util has a value (0).
     # we cannot determine from the data why this is, and why either are all not = 0 or left empty.
@@ -191,8 +204,7 @@ def check_missingness():
     print('unreported:  ', (m & ~nocard).sum(), round(bad[m & ~nocard].mean(), 4))
 
     # check for whether the missing rows have a different default rate than the filled rows.
-    # the missing rows have a default rate of 0.2157, while the filled ones range from
-    # 0.1333 - 0.1574.
+    # the missing rows have a default rate of 0.2157, while the filled ones range from 0.1333 - 0.1574.
     # since the blank carries more discrimination, it will be flagged with a missingness indicator.
 
     lvl = c['emp_length'].fillna('MISSING')
