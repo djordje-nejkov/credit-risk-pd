@@ -68,7 +68,7 @@ Cost: The testing slice is Q4 alone, which carries the possible December changes
 
 Decision: Continuous columns are standardised; dummy columns are left as they are.
 
-The LR model is supplied with additional one-hot columns, filled NaN rows, with each column's rows filled with its median value, and a shared bankcard indicator - see explore_features.py for reasoning about the bankcard indicators.
+The LR model is supplied with additional one-hot columns, filled NaN rows, with most column's rows filled with its median value, and a shared bankcard indicator - see explore_features.py for reasoning about the bankcard indicators. Some column's NaN rows are filled with 0, since they are the ones where a structural cause was found for the blank.
 
 The GBM model, represented by HistGradientBoostingClassifier, get native categoricals, natively split categorical columns, NaN rows left unfilled, and furthermore no indicator for the NaN columns.
 
@@ -116,8 +116,8 @@ Cost: The 20 configurations being a relatively low number poses risk that the fi
 
 # 10 Calibration
 
-Decision:
+Decision: Calibration is not measured nor applied. The observed scores are used as rankings only.
 
-Why:
+Why: Since the scores are used as rankings only, a strictly increasing transform leaves every approve/decline outcome unchanged. Moreover, measuring something that is already decided to not be of use just adds scope to the project. It was decided that any additional time spent on the project buys depth on existing scope, rather than adding something new.
 
-Cost:
+Cost: The findings carry AUC, Gini and PR curves; whether the probabilities are numerically right is not checked. For the model to be used in pricing or expected loss calculation, calibration would need to be performed first, and the LR vs GBM comparison does not say which model's probabilities behaved better, but only which ordered better. Furthermore, the project is named for a probability it does not verify.
