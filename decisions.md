@@ -78,11 +78,7 @@ The GBM model, represented by HistGradientBoostingClassifier, get native categor
 
 Both models receive identical rows, but the columns are different since the models require different encoding in order to function properly, for example LR needing one-hot columns to differentiate between levels, while GBM does without.
 
-As per 'verdicts' of explore_features.py: 
-
-    1. earliest_cr_line gets converted into months since it was first opened, measured from issue_d, issue date of the loan. This is used instead of the considered option of using an anchor date.
-
-    2. emp_length gets converted into numbers, with the 'MISSING' rows being assigned 0 and having an indicator column alongside it.
+As per 'verdicts' of explore_features.py: earliest_cr_line gets converted into months since it was first opened, measured from issue_d, issue date of the loan. This is used instead of the considered option of using an anchor date. emp_length gets converted into numbers, with the 'MISSING' rows being assigned 0 and having an indicator column alongside it.
 
 Why: Dummy columns are left as they are since standardising the feature stops it from being the actual difference between two levels, which I feel is more important for faithful representation than balancing the dummy's penalties with standardisation. On the contrary, continuous columns are standardised since standardisation corrects for an arbitrary choice of units, and a dummy has no unit to correct.
 
@@ -116,7 +112,7 @@ Furthermore, the cut is a fixed score value taken from Q3, so what fraction of Q
 
 # 9 Stopping rule
 
-Decision: A finding is defined as either GBM's and Logistic Regression's difference being inside noise, or outside it. V1 is done when all six pieces exist and the budget of LR's 7 and GBM's 20 configurations is spent, whatever the comparison shows. Scores are reported on a slice used neither for training nor for choosing the winning configuration.
+Decision: A finding is defined as either GBM's and Logistic Regression's difference being inside noise, or outside it. V1 is done when all four arms of the 2x2 exist and the budget of LR's 7 and GBM's 20 configurations is spent, whatever the comparison shows. Scores are reported on a slice used neither for training nor for choosing the winning configuration.
 
 Why: Since both GBM and Logistic Regression get the same treatment regarding training and scoring, meaning both get trained, validated and tested on the same slices, either finding is considered sufficient since we have no grounds in advance to reason one being better than the other. Moreover, trying to get one model to be better than the other has no real stopping point, since these kinds of models can always be improved by providing more thorough training or using more configurations. Regarding GBM getting 20 configurations while LR gets 7, GBM adjusts several knobs at once, while LR has one parameter with an already sufficient span, from 0.001 to 100, and also inf. Trying to equate the counts would be arbitrary rather than fair.
 
