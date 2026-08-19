@@ -1,5 +1,6 @@
 import pandas as pd
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from pandas.api.types import CategoricalDtype
 
 # load the files
 
@@ -157,3 +158,37 @@ X2_test  = onehot_scale(lr2_test, enc2, scaler2, cats2, cont2)
 
 print(X1_train.shape, X1_val.shape, X1_test.shape)
 print(X2_train.shape, X2_val.shape, X2_test.shape)
+
+# categories fixed on the training slice so all three slices share one encoding, since
+# addr_state has 46 levels in Q1-Q2 against 49 in Q3 and Q4. levels absent from training
+# are set to NaN, 405 rows in Q3 and 984 in Q4, which HGB routes natively - see decisions.md #7.
+# the LR arm handles the same rows differently, with handle_unknown='ignore' giving an
+# all-zero row across the state blo
+
+dtypes1 = {col: CategoricalDtype(categories=sorted(train[col].dropna().unique()))
+           for col in cats1}
+dtypes2 = {col: CategoricalDtype(categories=sorted(train[col].dropna().unique()))
+           for col in cats2}
+
+def encode_gbm(df, dtypes):
+    df = df.copy()
+    for col, dt in dtypes.items():
+        df[col] = df[col].where(df[col].isin(dt.categories))
+        df[col] = df[col].astype(dt)
+    return df
+
+# GBM arm: native categoricals, no fills, no indicators, no scaling - see decisions.md #7
+
+gbm1_train = encode_gbm(train[set1], dtypes1)
+gbm1_val   = encode_gbm(val[set1], dtypes1)
+gbm1_test  = encode_gbm(test[set1], dtypes1)
+
+gbm2_train = encode_gbm(train[set2], dtypes2)
+gbm2_val   = encode_gbm(val[set2], dtypes2)
+gbm2_test  = encode_gbm(test[set2], dtypes2)
+
+print(gbm1_train.shape, gbm2_train.shape)
+print(gbm1_train.isna().sum().sum(), gbm2_train.isna().sum().sum())
+
+print((train[cats1].isna().sum().sum()), (gbm1_train[cats1].isna().sum().sum()))
+print(gbm1_val[cats1].isna().sum().sum(), gbm1_test[cats1].isna().sum().sum())
