@@ -72,7 +72,7 @@ Cost: The testing slice is Q4 alone, which carries the possible December changes
 
 Decision: Continuous columns are standardised; dummy columns are left as they are.
 
-The LR model is supplied with additional one-hot columns, filled NaN rows, with most columns' NaN rows filled with their median value. The exceptions are bc_util and bc_open_to_buy, filled with 0, since a structural cause was found for the blank. The remaining bankcard and 'since' columns are filled with median values, with the 'since' columns each having an indicator column, while the bankcard columns share one.
+The LR model is supplied with additional one-hot columns, filled NaN rows, with most columns' NaN rows filled with their median value. The exceptions are bc_util and bc_open_to_buy, filled with 0, since a structural cause was found for the blank. The remaining bankcard and 'since' columns, as well as mo_sin_old_il_acct, are filled with median values, with the 'since' columns and mo_sin_old_il_acct each having an indicator column, while the bankcard columns share one.
 
 The GBM model, represented by HistGradientBoostingClassifier, gets native categoricals, natively split categorical columns, NaN rows left unfilled, and furthermore no indicator for the NaN columns.
 
@@ -94,6 +94,8 @@ For the GBM arm, NaN rows are kept as is since filling would damage the tree whe
 
 The 'since' columns are filled with median values, but each of these columns also carries an indicator, which makes that value inert. Since every blank row in a column gets the same fill, its contribution is constant across the group and the indicator's coefficient absorbs it. A different fill value moves that coefficient and leaves the fit unchanged.
 
+Regarding mo_sin_old_il_acct, a check in explore_features.py found a similar pattern to the 'since' columns, since 4,426 of 4,431 blanks have no installment account, so the blank is structural. On the contrary the NaN rows were riskier, with 0.1607 pd for NaN rows and 0.1509 for the present ones.
+
 Cost: The observable differences in the 2x2 cannot be fully accredited to model performance, but rather the difference in representation of the two models needs to be taken into account. Any gap would have a second possible source, and the design cannot separate representation from the algorithm.
 
 The shared bankcard indicator averages the 631 no-bankcard rows at 0.1965 pd and the 2,453 unreported rows at 0.1639 into 0.1706. Two indicators were rejected since the 631 rows carry only 124 bad events.
@@ -102,7 +104,7 @@ The 253 degenerate rows stay pooled inside bc_util = 0 in both models, and neith
 
 The fill values for percent_bc_gt_75 and mths_since_recent_bc sit inside their observed range but are not derived. This was done knowingly, since the model would then include a fitted component inside the preprocessing - its own error and drift, which would be another thing that would need justification. This was deemed not worthy for 3,279/282,787 rows.
 
-For the 'since' columns, for each one LR gets a median fill plus an additional indicator column, while GBM stays with NaN which it can route natively. The consequence is that LR cannot differentiate what, for example, 'had no public record' means for someone with a thin credit file and for someone with fifteen accounts, while GBM can split again below that branch to account for this. Furthermore, the fill value is chosen in an arbitrary way.
+For the 'since' columns and mo_sin_old_il_acct, for each one LR gets a median fill plus an additional indicator column, while GBM stays with NaN which it can route natively. The consequence is that LR cannot differentiate what, for example, 'had no public record' means for someone with a thin credit file and for someone with fifteen accounts, while GBM can split again below that branch to account for this. Furthermore, the fill value is chosen in an arbitrary way. 
 
 # 8 Threshold
 

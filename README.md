@@ -50,7 +50,7 @@ As the model predicts whether an applicant will default, the only features it ca
 
 There are 4 tests that determine whether the feature is kept or excluded from modelling, they are: 1. whether the feature has enough content to model, 2. whether it's knowable at application, 3. whether its levels have enough rows to estimate a rate from, 4. whether it reconstructs an excluded feature. These tests run in order, and a column's stated reason for exclusion is the one it failed first. Test 2's timing for mo_sin_old_il_acct, mths_since_recent_bc_dlq and mths_since_recent_inq is inferred from related columns rather than from the data dictionary, which has no published description for them. Further on this in decisions.md #4.
 
-The parquet created in explore_cohort.py lists 91/151 features that survived the initial check. Of those 91, in the end: 64 features are included in both sets, with 22 excluded from both, 4 only being in set 1 and 1 (loan_status) being the target. The exclusion reasons for the excluded features can be found in features.csv.
+The parquet created in explore_cohort.py lists 91/151 features that survived the initial check. Of those 91, in the end: 63 features are included in both sets, with 23 excluded from both, 4 only being in set 1 and 1 (loan_status) being the target. The exclusion reasons for the excluded features can be found in features.csv.
 
 Regarding the 4 features only being in set 1, they are features derived from Lending Club's own model output, and set 2 is defined as being without these features. Further on this in decisions.md #5.
 

@@ -229,6 +229,22 @@ def check_missingness():
         print('  present:', (~m).sum(), 'bad rate:', round(bad[~m].mean(), 4))
         print('  present median:', c.loc[~m, col].median())
 
+    # check whether mo_sin_old_il_acct's blank means the borrower has no installment account,
+    # which would make it structural like the 'since' columns rather than an unreported value.
+    # measured on the training slice, since that is where the fill is fitted per #6.
+    # 4,426/4,431 blanks are borrowers with no installment account, so the NaN is structural,
+    # meaning no installment account ever opened.
+    # 0.1607 pd for missing againts 0.1509 pd for present, median 128.
+
+    tr = c[c['issue_d'].dt.quarter <= 2]
+    trbad = bad[tr.index]
+    m = tr['mo_sin_old_il_acct'].isna()
+
+    print('missing:', m.sum(), 'bad rate:', round(trbad[m].mean(), 4))
+    print('present:', (~m).sum(), 'bad rate:', round(trbad[~m].mean(), 4))
+    print('present median:', tr.loc[~m, 'mo_sin_old_il_acct'].median())
+    print(pd.crosstab(m, tr['num_il_tl'] == 0))
+
 
 check_missingness()
 
