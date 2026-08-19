@@ -43,12 +43,12 @@ train = rpar[quarter <= 2]
 val = rpar[quarter == 3]
 test = rpar[quarter == 4]
 
-trgt_train = trgt[quarter <= 2]
-trgt_val = trgt[quarter == 3]
-trgt_test = trgt[quarter == 4]
+y_train = trgt[quarter <= 2]
+y_val = trgt[quarter == 3]
+y_test = trgt[quarter == 4]
 
 print(train.shape, val.shape, test.shape)
-print(round(trgt_train.mean(), 4), round(trgt_val.mean(), 4), round(trgt_test.mean(), 4))
+print(round(y_train.mean(), 4), round(y_val.mean(), 4), round(y_test.mean(), 4))
 
 # column selection for both sets
 
