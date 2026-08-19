@@ -36,7 +36,13 @@ The definition is limited in that a loan reaching 60 or 90 days past due (DPD), 
 
 ## 4. What "done" means
 
-*TODO*
+The difference between LR and GBM either sits inside noise or outside it. Both findings are results.
+
+Since both arms get identical rows, identical slices and a stated configuration budget, there is no prior reason to expect one to win. Furthermore, chasing a win for one of the models has no stopping point, as any model improves with more tuning.
+
+GBM gets 20 configurations, LR gets 7. This might seem like an asymmetry, but keep in mind that GBM has several knobs to adjust. LR has one, the penalty coefficient, with its configuration span running from 0.001 to 100, as well as inf. Equating the counts would be arbitrary.
+
+The score comes from Q4 of the cohort, since it is a slice used for neither fitting nor choosing the winning configuration. This avoids reporting a score from the slice that chose the configuration, which would credit a number for being high on that slice rather than the configuration for being best.
 
 ## 5. Features
 
