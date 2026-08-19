@@ -213,6 +213,22 @@ def check_missingness():
     t['bad_rate'] = (t['bad'] / t['n']).round(4)
     print(t.to_string())
 
+    # check whether the mths_since_* blanks carry a different bad rate than the populated rows.
+    # blank on these should mean the event never happened, so the direction should be the reverse of
+    # the bankcard block, where missing was riskier. decides whether these columns need indicators.
+    # the missing group consistently carries less risk than the filled rows, as expected.
+    # a missing indicator column will be used for all six, filled with median values.
+
+    since = ['mths_since_last_delinq', 'mths_since_last_record', 'mths_since_last_major_derog',
+             'mths_since_recent_bc_dlq', 'mths_since_recent_revol_delinq', 'mths_since_recent_inq']
+
+    for col in since:
+        m = c[col].isna()
+        print(col)
+        print('  missing:', m.sum(), 'bad rate:', round(bad[m].mean(), 4))
+        print('  present:', (~m).sum(), 'bad rate:', round(bad[~m].mean(), 4))
+        print('  present median:', c.loc[~m, col].median())
+
 
 check_missingness()
 

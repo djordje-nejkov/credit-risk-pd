@@ -72,31 +72,37 @@ Cost: The testing slice is Q4 alone, which carries the possible December changes
 
 Decision: Continuous columns are standardised; dummy columns are left as they are.
 
-The LR model is supplied with additional one-hot columns, filled NaN rows, with most column's rows filled with its median value, and a shared bankcard indicator - see explore_features.py for reasoning about the bankcard indicators. Some column's NaN rows are filled with 0, since they are the ones where a structural cause was found for the blank.
+The LR model is supplied with additional one-hot columns, filled NaN rows, with most columns' NaN rows filled with their median value. The exceptions are bc_util and bc_open_to_buy, filled with 0, since a structural cause was found for the blank. The remaining bankcard and 'since' columns are filled with median values, with the 'since' columns each having an indicator column, while the bankcard columns share one.
 
-The GBM model, represented by HistGradientBoostingClassifier, get native categoricals, natively split categorical columns, NaN rows left unfilled, and furthermore no indicator for the NaN columns.
+The GBM model, represented by HistGradientBoostingClassifier, gets native categoricals, natively split categorical columns, NaN rows left unfilled, and furthermore no indicator for the NaN columns.
 
 Both models receive identical rows, but the columns are different since the models require different encoding in order to function properly, for example LR needing one-hot columns to differentiate between levels, while GBM does without.
 
 As per 'verdicts' of explore_features.py: earliest_cr_line gets converted into months since it was first opened, measured from issue_d, issue date of the loan. This is used instead of the considered option of using an anchor date. emp_length gets converted into numbers, with the 'MISSING' rows being assigned 0 and having an indicator column alongside it.
 
+Lastly, the 'since' columns (see explore_features.py) will get filled with median values learned on the training slices per #6, as well as each one having an additional indicator column indicating whether the value was originally NaN. Using only the median would misrepresent the borrowers with no delinquency, public records or recent inquiries. For example, mths_since_last_record's blank group which has 0.1424 pd would get merged with the present group, which has 0.1765 pd.
+
 Why: Dummy columns are left as they are since standardising the feature stops it from being the actual difference between two levels, which I feel is more important for faithful representation than balancing the dummy's penalties with standardisation. On the contrary, continuous columns are standardised since standardisation corrects for an arbitrary choice of units, and a dummy has no unit to correct.
 
 The two models are supplied differently since LR's requirements are conditions of using it correctly, rather than additions. With GBM, all of these are additions, and the model would function fine without. It would hand it a representation built around LR's constraints.
 
-Regarding LR's filled rows, the rejected alternatives were: 1. to drop the NaN rows, which resulted in 3.07% of the cohort being kept, see explore_features.py and 2. using the median without an indicator. The fill values sit inside the observed range of the columns values. The median fills are fitted on the training slice as per decisions.md #6, and some features like bc_open_to_buy and bc_util are kept constant, rather than fitted, see explore_features.py as for why.
+Regarding LR's filled rows, the rejected alternatives were: 1. to drop the NaN rows, which resulted in 3.07% of the cohort being kept, see explore_features.py and 2. using the median without an indicator. The fill values sit inside the observed range of the column's values. The median fills are fitted on the training slice as per decisions.md #6, and some features like bc_open_to_buy and bc_util are kept constant, rather than fitted, see explore_features.py as for why.
 
-As for the shared bankcard indicators, 2,652/3,279 rows are missing all four indicators, which is 81%. Having four separate indicators would be near-duplicates splitting one signal when we apply L2 penalisation. The rest that have 1-3/4 parameters missing get treated as missing all of them.
+As for the shared bankcard indicator, 2,652/3,279 rows are missing all four columns, which is 81%. Having four separate indicators would be near-duplicates splitting one signal when we apply L2 penalisation. The rest that have 1-3/4 parameters missing get treated as missing all of them.
 
 For the GBM arm, NaN rows are kept as is since filling would damage the tree when it lands on an existing group at a different risk level, bc_util being the perfect example: filling the rows with 0 like it is done for the LR arm puts 2,831 missing rows at 0.1706 pd inside the genuine zero-utilisation group, and no split can separate them.
 
+The 'since' columns are filled with median values, but each of these columns also carries an indicator, which makes that value inert. Since every blank row in a column gets the same fill, its contribution is constant across the group and the indicator's coefficient absorbs it. A different fill value moves that coefficient and leaves the fit unchanged.
+
 Cost: The observable differences in the 2x2 cannot be fully accredited to model performance, but rather the difference in representation of the two models needs to be taken into account. Any gap would have a second possible source, and the design cannot separate representation from the algorithm.
 
-The shared bankcard indicators average the 631 no-bankcard rows at 0.1965 pd and the 2,453 unreported rows at 0.1639 into 0.1706. Two indicators were rejected since the 631 rows carry only 124 bad events.
+The shared bankcard indicator averages the 631 no-bankcard rows at 0.1965 pd and the 2,453 unreported rows at 0.1639 into 0.1706. Two indicators were rejected since the 631 rows carry only 124 bad events.
 
 The 253 degenerate rows stay pooled inside bc_util = 0 in both models, and neither has the ability to separate them from the actual larger pool of borrowers who have bc_util = 0 because they actually used 0% of their bank card limit. LR adds 2,831 rows into that same bucket, but with an indicator, so the bucket has a different composition in the two models.
 
-The fill values sit inside the observed range but are not derived. This was done knowingly, since the model would then include a fitted component inside the preprocessing - its own error and drift, which would be another thing that would need justification. This was deemed not worthy for 3,279/282,787 rows.
+The fill values for percent_bc_gt_75 and mths_since_recent_bc sit inside their observed range but are not derived. This was done knowingly, since the model would then include a fitted component inside the preprocessing - its own error and drift, which would be another thing that would need justification. This was deemed not worthy for 3,279/282,787 rows.
+
+For the 'since' columns, for each one LR gets a median fill plus an additional indicator column, while GBM stays with NaN which it can route natively. The consequence is that LR cannot differentiate what, for example, 'had no public record' means for someone with a thin credit file and for someone with fifteen accounts, while GBM can split again below that branch to account for this. Furthermore, the fill value is chosen in an arbitrary way.
 
 # 8 Threshold
 
